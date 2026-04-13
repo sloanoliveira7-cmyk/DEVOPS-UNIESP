@@ -55,3 +55,9 @@ Durante o período da atividade, farei um **commit surpresa** propositalmente qu
 3. Certifique-se de que o README do seu grupo contenha os nomes dos integrantes e o link para a aplicação rodando (se aplicável).
 
 > "Software funcionando é a medida primária de progresso." — Manifesto Ágil
+
+## Alunos
+Franciely Ariel 
+Marinalva
+Felipe
+Luana Jéssica
