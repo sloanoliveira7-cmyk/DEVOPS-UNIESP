@@ -1,0 +1,68 @@
+name: Pipeline Uniesp
+
+on: [push]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # --- ETAPA 1: COMMIT ---
+  commit-stage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Testes Unitários (O Guardião)
+        run: go test ./...
+
+      - name: Login no Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e Push da Imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # --- ETAPA 2: HOMOLOGAÇÃO ---
+  staging-stage:
+    needs: commit-stage
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Simulação de Migração de Banco
+        run: |
+          echo "Conectando ao banco via Docker..."
+          echo "Executando: CREATE TABLE alunos (id SERIAL, nome VARCHAR(100));"
+          
+      - name: Deploy em Staging
+        run: echo "Imagem ${{ github.sha }} implantada em homologacao."
+
+  # --- ETAPA 3: PRODUÇÃO ---
+  production-stage:
+    needs: staging-stage
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy em Produção
+        run: echo "Fazendo deploy da imagem validada..."
+
+      - name: Smoke Test (Validação Final)
+        run: |
+          # Aqui simularíamos um curl na URL real
+          echo "Validando endpoint /health..."
+          # curl --fail http://minha-api.com/health
