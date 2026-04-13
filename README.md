@@ -56,8 +56,3 @@ Durante o período da atividade, farei um **commit surpresa** propositalmente qu
 
 > "Software funcionando é a medida primária de progresso." — Manifesto Ágil
 
-## Alunos
-Franciely Ariel 
-Marinalva
-Felipe
-Luana Jéssica
