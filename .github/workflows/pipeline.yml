@@ -11,39 +11,183 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ETAPA 1: O GUARDIÃO
+  # ETAPA 1: O GUARDIÃO - Build e Testes
   commit-stage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout código
+        uses: actions/checkout@v4
       
-      # TODO: Configurar o ambiente Go
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
       
-      # TODO: Comando para rodar os testes unitários
-      # Dica: O pipeline deve PARAR se o teste falhar.
+      - name: Executar testes unitários
+        run: mvn clean test -B
       
-      # TODO: Login e Build/Push da imagem Docker
-      # Dica: Use o SHA do commit como tag para garantir imutabilidade.
+      - name: Build da aplicação
+        run: mvn clean package -DskipTests -B
+      
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extrair metadados da imagem
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+      
+      - name: Build e Push da imagem Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-  # ETAPA 2: HOMOLOGAÇÃO
+  # ETAPA 2: HOMOLOGAÇÃO - Migrations e Validação
   staging-stage:
-    # ERRO PROPOSITAL: Falta a dependência aqui. 
-    # Sem ela, este job rodará ao mesmo tempo que o de cima.
+    needs: commit-stage
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: devops
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
-      # TODO: Comando para simular a migração do banco de dados
-      - name: Migração de Banco
-        run: echo "O grupo deve implementar o comando de migração aqui"
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Aguardar PostgreSQL estar pronto
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Aguardando PostgreSQL..."
+            sleep 2
+          done
+        env:
+          PGPASSWORD: password
+      
+      - name: Executar Flyway Migrations
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/src/main/resources/db/migration:/flyway/sql \
+            --network host \
+            -e FLYWAY_URL=jdbc:postgresql://localhost:5432/devops \
+            -e FLYWAY_USER=postgres \
+            -e FLYWAY_PASSWORD=password \
+            flyway/flyway:9.22.3 migrate
+      
+      - name: Validar schema do banco de dados
+        run: |
+          PGPASSWORD=password psql -h localhost -U postgres -d devops -c "\dt"
+        env:
+          PGPASSWORD: password
+      
+      - name: Puxar imagem do registry
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
 
-      # TODO: Puxar a imagem do registry e "implantar" (echo)
-
-  # ETAPA 3: PRODUÇÃO
+  # ETAPA 3: PRODUÇÃO - Deploy e Smoke Test
   production-stage:
-    # TODO: Definir a dependência correta
+    needs: staging-stage
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: devops
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
-      - name: Deploy
-        run: echo "Implantando a mesma imagem de Staging..."
-
-      # TODO: Implementar o Smoke Test
-      # Dica: Use um comando que verifique o status HTTP de uma rota.
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Puxar imagem do registry
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+      
+      - name: Executar Flyway Migrations em Produção
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/src/main/resources/db/migration:/flyway/sql \
+            --network host \
+            -e FLYWAY_URL=jdbc:postgresql://localhost:5432/devops \
+            -e FLYWAY_USER=postgres \
+            -e FLYWAY_PASSWORD=password \
+            flyway/flyway:9.22.3 migrate
+      
+      - name: Deploy - Iniciar container
+        run: |
+          docker run -d \
+            --name app-container \
+            -p 8080:8080 \
+            -e DATABASE_URL=jdbc:postgresql://localhost:5432/devops \
+            -e DATABASE_USER=postgres \
+            -e DATABASE_PASSWORD=password \
+            --network host \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+      
+      - name: Aguardar aplicação iniciar
+        run: sleep 10
+      
+      - name: Smoke Test - Verificar saúde da aplicação
+        run: |
+          for i in {1..5}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health)
+            echo "Tentativa $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✓ Aplicação está saudável!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "✗ Aplicação não respondeu com status 200"
+          exit 1
+      
+      - name: Validar endpoints
+        run: |
+          echo "Testando endpoint /health..."
+          curl -v http://localhost:8080/health
+          
+          echo -e "\n\nTestando endpoint /users..."
+          curl -X POST http://localhost:8080/users \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Teste User"}' || true
+      
+      - name: Limpar container
+        if: always()
+        run: docker stop app-container || true

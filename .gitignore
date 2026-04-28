@@ -1,0 +1,42 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+pom.xml.tag
+pom.xml.releaseBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Gradle
+.gradle/
+build/
+
+# Java
+*.class
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+
+# Application logs
+app.log
+logs/
