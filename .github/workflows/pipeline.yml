@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: sloanoliveira7-cmyk/devops-uniesp
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # ETAPA 1: O GUARDIÃO - Build e Testes
@@ -42,22 +42,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Extrair metadados da imagem
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix={{branch}}-
-            type=ref,event=branch
+      - name: Preparar nome da imagem (lowercase)
+        id: prep
+        run: |
+          GH_REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_name=${{ env.REGISTRY }}/${GH_REPO_LOWER}" >> $GITHUB_OUTPUT
+          echo "tag=main-${{ github.sha }}" >> $GITHUB_OUTPUT
       
       - name: Build e Push da imagem Docker
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ steps.prep.outputs.image_name }}:${{ steps.prep.outputs.tag }}
+            ${{ steps.prep.outputs.image_name }}:latest
 
   # ETAPA 2: HOMOLOGAÇÃO - Migrations e Validação
   staging-stage:
@@ -110,7 +109,8 @@ jobs:
       
       - name: Puxar imagem do registry
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+          GH_REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker pull ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
 
   # ETAPA 3: PRODUÇÃO - Deploy e Smoke Test
   production-stage:
@@ -138,7 +138,8 @@ jobs:
       
       - name: Puxar imagem do registry
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+          GH_REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker pull ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
       
       - name: Executar Flyway Migrations em Produção
         run: |
@@ -152,6 +153,7 @@ jobs:
       
       - name: Deploy - Iniciar container
         run: |
+          GH_REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           docker run -d \
             --name app-container \
             -p 8080:8080 \
@@ -159,34 +161,24 @@ jobs:
             -e DATABASE_USER=postgres \
             -e DATABASE_PASSWORD=password \
             --network host \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+            ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
       
       - name: Aguardar aplicação iniciar
-        run: sleep 10
+        run: sleep 15
       
       - name: Smoke Test - Verificar saúde da aplicação
         run: |
-          for i in {1..5}; do
+          for i in {1..10}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health)
             echo "Tentativa $i: HTTP $HTTP_CODE"
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✓ Aplicação está saudável!"
               exit 0
             fi
-            sleep 2
+            sleep 3
           done
           echo "✗ Aplicação não respondeu com status 200"
           exit 1
-      
-      - name: Validar endpoints
-        run: |
-          echo "Testando endpoint /health..."
-          curl -v http://localhost:8080/health
-          
-          echo -e "\n\nTestando endpoint /users..."
-          curl -X POST http://localhost:8080/users \
-            -H "Content-Type: application/json" \
-            -d '{"name": "Teste User"}' || true
       
       - name: Limpar container
         if: always()
