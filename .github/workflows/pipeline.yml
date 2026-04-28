@@ -164,18 +164,18 @@ jobs:
             ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
       
       - name: Aguardar aplicação iniciar
-        run: sleep 15
+        run: sleep 30
       
       - name: Smoke Test - Verificar saúde da aplicação
         run: |
-          for i in {1..10}; do
+          for i in {1..15}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health)
             echo "Tentativa $i: HTTP $HTTP_CODE"
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✓ Aplicação está saudável!"
               exit 0
             fi
-            sleep 3
+            sleep 5
           done
           echo "✗ Aplicação não respondeu com status 200"
           exit 1
