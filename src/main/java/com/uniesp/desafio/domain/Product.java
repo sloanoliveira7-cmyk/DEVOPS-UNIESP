@@ -23,18 +23,21 @@ public class Product {
      * 
      * @return preço final com desconto aplicado
      */
-    public BigDecimal calculateFinalPrice() {
+ public BigDecimal calculateFinalPrice() {
         if (basePrice == null) {
             return BigDecimal.ZERO;
         }
 
+        BigDecimal finalPrice = basePrice;
+
         if ("Notebook".equalsIgnoreCase(name)) {
-            return basePrice.multiply(new BigDecimal("0.9")); // 10% de desconto
+            finalPrice = basePrice.multiply(new BigDecimal("0.9")); 
         } else if ("Mouse".equalsIgnoreCase(name)) {
-            return basePrice.multiply(new BigDecimal("0.95")); // 5% de desconto
+            finalPrice = basePrice.multiply(new BigDecimal("0.95"));
         }
 
-        return basePrice;
+        // Isso corrige o erro: força 2 casas decimais e arredonda se necessário
+        return finalPrice.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     /**
