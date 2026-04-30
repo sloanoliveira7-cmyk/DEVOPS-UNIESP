@@ -156,8 +156,9 @@ jobs:
           GH_REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           docker run -d \
             --name app-container \
-            --network host \
-            -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/devops \
+            -p 8080:8080 \
+            --link postgres:postgres \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/devops \
             -e SPRING_DATASOURCE_USERNAME=postgres \
             -e SPRING_DATASOURCE_PASSWORD=password \
             ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
