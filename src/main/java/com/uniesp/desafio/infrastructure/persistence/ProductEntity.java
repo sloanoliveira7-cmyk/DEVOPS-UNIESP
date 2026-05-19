@@ -1,7 +1,7 @@
 package com.uniesp.desafio.infrastructure.persistence;
 
 import com.uniesp.desafio.domain.Product;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
