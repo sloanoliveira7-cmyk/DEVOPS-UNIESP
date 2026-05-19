@@ -1,12 +1,12 @@
 -- Criar tabela de usuários
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
--- Criar tabela de produtos (CORRIGIDO: faltava aspas de fechamento)
+-- Criar tabela de produtos
 CREATE TABLE IF NOT EXISTS products (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     base_price NUMERIC(10, 2) NOT NULL
 );
