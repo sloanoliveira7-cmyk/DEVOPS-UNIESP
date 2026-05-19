@@ -177,27 +177,34 @@ jobs:
             --add-host=host.docker.internal:host-gateway \
             ${{ env.REGISTRY }}/${GH_REPO_LOWER}:main-${{ github.sha }}
       
-      - name: Aguardar aplicação iniciar
-        run: sleep 20
-      
       - name: Smoke Test - Verificar saúde da aplicação
         run: |
-          echo "Iniciando Smoke Test..."
-          for i in {1..20}; do
+          echo "Iniciando Smoke Test resiliente..."
+          # Aguarda até 2 minutos (24 tentativas * 5 segundos)
+          for i in {1..24}; do
+            echo "Tentativa $i: Verificando endpoint /health..."
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
-            echo "Tentativa $i: HTTP $HTTP_CODE"
+            
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✓ Aplicação está saudável!"
+              echo "✓ Aplicação está saudável e respondendo na porta 8080!"
               exit 0
             fi
-            echo "Logs da aplicação (últimas 10 linhas):"
-            docker logs --tail 10 app-container
+            
+            echo "HTTP $HTTP_CODE - Aplicação ainda não está pronta. Aguardando 5s..."
             sleep 5
           done
-          echo "✗ Aplicação não respondeu com status 200"
-          echo "Logs completos da aplicação para diagnóstico:"
-          docker logs app-container
+          
+          echo "✗ Erro: A aplicação não ficou saudável após 2 minutos."
           exit 1
+      
+      - name: Exibir logs em caso de falha
+        if: failure()
+        run: |
+          echo "=== LOGS DO CONTAINER (app-container) ==="
+          docker logs app-container
+          echo "=========================================="
+          echo "=== STATUS DOS CONTAINERS ==="
+          docker ps -a
       
       - name: Limpar container
         if: always()
