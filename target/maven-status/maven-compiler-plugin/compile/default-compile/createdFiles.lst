@@ -1,0 +1,17 @@
+com/uniesp/desafio/presentation/ProductController.class
+com/uniesp/desafio/infrastructure/persistence/UserJpaRepository.class
+com/uniesp/desafio/domain/Calculator.class
+com/uniesp/desafio/infrastructure/persistence/UserRepositoryAdapter.class
+com/uniesp/desafio/infrastructure/persistence/ProductEntity.class
+com/uniesp/desafio/infrastructure/persistence/ProductRepositoryAdapter.class
+com/uniesp/desafio/presentation/HealthController.class
+com/uniesp/desafio/infrastructure/persistence/ProductJpaRepository.class
+com/uniesp/desafio/application/usecases/UserService.class
+com/uniesp/desafio/domain/Product.class
+com/uniesp/desafio/application/usecases/ProductService.class
+com/uniesp/desafio/application/ports/UserRepository.class
+com/uniesp/desafio/DesafioApplication.class
+com/uniesp/desafio/domain/User.class
+com/uniesp/desafio/presentation/UserController.class
+com/uniesp/desafio/application/ports/ProductRepository.class
+com/uniesp/desafio/infrastructure/persistence/UserEntity.class

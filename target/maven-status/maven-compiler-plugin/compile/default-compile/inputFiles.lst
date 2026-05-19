@@ -1,0 +1,17 @@
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/presentation/ProductController.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/application/ports/ProductRepository.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/ProductEntity.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/UserJpaRepository.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/UserRepositoryAdapter.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/domain/Calculator.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/presentation/UserController.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/UserEntity.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/application/usecases/ProductService.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/presentation/HealthController.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/application/ports/UserRepository.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/domain/Product.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/domain/User.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/ProductRepositoryAdapter.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/DesafioApplication.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/infrastructure/persistence/ProductJpaRepository.java
+/home/ubuntu/DEVOPS-UNIESP/src/main/java/com/uniesp/desafio/application/usecases/UserService.java
