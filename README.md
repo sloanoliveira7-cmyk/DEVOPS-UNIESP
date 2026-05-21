@@ -49,5 +49,5 @@ Baseado no README original, seu pipeline deve ter:
 ---
 ## 👥 Integrantes
 - Nome 1
-- Nome 2
+- Nome pedro manoel silva gouveia
 ...
